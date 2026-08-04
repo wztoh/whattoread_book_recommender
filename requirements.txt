@@ -1,0 +1,7 @@
+streamlit
+python-dotenv
+litellm
+uuid
+google-genai
+
+
