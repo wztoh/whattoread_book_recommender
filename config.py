@@ -24,3 +24,7 @@ BOOK_GENRES_LIST = [
 ]
 
 
+ERROR_MSG = {"400": "Request failed. Fill in at least one search criteria.",
+             "404": "Search request failed."}
+
+
