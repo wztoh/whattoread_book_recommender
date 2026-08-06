@@ -33,27 +33,41 @@ Want "a book similar" to your favourite titles? Craving for a specific genre? Th
 
 ## Step 2 (setup virtual environment and dependencies)
 - Create a virtual environment and activate it
-  ```
-  python -m venv venv
-  venv\Scripts\activate
-  ```
+```
+(Windows)
+python -m venv venv venv\Scripts\activate
+python -m venv venv
+
+(Mac OS)
+python3 -m venv venv
+source venv/bin/activate
+```
 - install dependencies via requirements.txt
-  ```
-  # good habit to upgrade pip first
-  python -m pip install --upgrade pip
-  python -m pip install -r requirements.txt
-  ```
+```
+# good habit to upgrade pip first
+(Windows)
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+
+(Mac OS)
+python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements.txt
+```
 ## Step 3 (add your api keys)
 - Rename .env.example file to .env (check there is no trailing characters after ".env", eg. ".env.txt"
 - Open .env file and replace all fields with your api keys
-  ```
-  GEMINI_API_KEY="Your api key here"
-  ```
+```
+GEMINI_API_KEY="Your api key here"
+```
 - You need a NLB api key for this project. Refer to https://go.gov.sg/nlblabs-form
 
 ## Step 4 (launch the streamlit program)
 ```
+(Windows)
 python -m streamlit run app.py
+
+(Mac OS)
+python3 -m streamlit run app.py
 ```
 - A pop out window running the app should appear. Else try typing  http://localhost:8501/ (default local url) into your web browser.
 
