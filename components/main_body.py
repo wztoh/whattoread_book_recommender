@@ -1,9 +1,11 @@
 import streamlit as st
 import uuid
 import config
-from utils.prompts import generate_system_prompt,generate_book_search_prompt
-from utils.tavily_services import tavily_search
-from utils.gemini_services import ask_gemini
+from utils.prompts import generate_system_prompt,generate_book_search_prompt,generate_format_recommendations_prompt
+from utils.tavily_services import tavily_search,TavilySearchError
+from utils.gemini_services import ask_gemini,GeminiServiceError
+from utils.helper_functions import parse_recommendations
+from utils.nlb_services import find_book_in_library
 
 def init_vars():
     """
@@ -29,6 +31,12 @@ def init_vars():
     if "genre_combined" not in st.session_state:
         st.session_state.genre_combined = ""
 
+    # recommended book details
+    if "recommended_books_list" not in st.session_state:
+        st.session_state.recommended_books_list = []
+    if "selected_book" not in st.session_state:
+        st.session_state.selected_book = None
+
 def reset_session():
     st.session_state.session_id = str(uuid.uuid4())
     st.session_state.messages = [{"role": "system",
@@ -40,6 +48,9 @@ def reset_session():
     st.session_state.genre_pills = []
     st.session_state.genre_input_textfield = ""
     st.session_state.genre_combined = ""
+
+    st.session_state.recommended_books_list = []
+    st.session_state.selected_book = None
 
 def genre_pills_buttons():
     selected_genres = st.pills("Choose from the below genres. Type in the box if your genre is not listed.",
@@ -101,33 +112,87 @@ Search for books with similar criteria:
 
 def recommend_books():
     user_criteria = parse_user_criteria()
-    tavily_result = tavily_search(user_criteria)
-    book_search_prompt = generate_book_search_prompt(user_criteria)
+    try:
+        tavily_result = tavily_search(user_criteria)
+    except TavilySearchError as e:
+        st.error("Tavily search errors.")
+        st.exception(e)
+    book_search_prompt = generate_book_search_prompt(user_criteria,tavily_result)
 
-    st.write(f"user critera: \n{user_criteria}")
-    st.write(f"tavily result: \n{tavily_result}")
-    st.write(f"book prompt:\n{book_search_prompt}")
 
     # # store information to message history/session state before prompt
     st.session_state.messages.append({"role": "user",
                                       "content": user_criteria})
+
+    
     # # get response from gemini
-    response = ask_gemini(st.session_state.messages,book_search_prompt)
+    # convert session_state.messages (list of dicts) into a hashable tuple for  st.cache
+    hashable_history = tuple((m["role"], m["content"]) for m in st.session_state.messages)
+    try:
+        # response = ask_gemini(st.session_state.messages,book_search_prompt)
+        response = ask_gemini(hashable_history,book_search_prompt)
+    except GeminiServiceError as e:
+        st.error("Gemini couldn't get book recommendations right now. Please try again.")
+        st.exception(e)  
 
     try:
         if response in config.ERROR_MSG:
             st.warning(f"CODE:{response}. {config.ERROR_MSG[response]}")
     except Exception as e:
-        st.write(f"CODE {response}: {e}")
+        st.warning(f"CODE {response}: {e}")
 
     # # store response to message history/session state after prompt
     st.session_state.messages.append({"role": "assistant",
                                      "content": response})
 
+    try:
+        format_prompt = generate_format_recommendations_prompt(response)
+        formatted_response = ask_gemini([],format_prompt)
 
-    st.write(f"BOOK RECOMMENDATION RESPONSE:\n{response}") #TODO remove once done
+        formatted_response = parse_recommendations(formatted_response)
+        st.session_state.recommended_books_list = formatted_response
+    except GeminiServiceError as e:
+        st.error("Gemini parsing result format into json failed.")
+        st.exception(e)  
+    except Exception as e:
+        st.error("ERROR!!!")
+        st.exception(e)
+
 
 def recommend_books_button():
-    if st.button("Recommend Books"):
+    if st.button("Recommend Books",
+                 type="primary",
+                 icon="📚"):
+        st.session_state.selected_book = None # reset showing libraries
         recommend_books()
+
     
+def display_recommendations():
+    for i,book in enumerate(st.session_state.recommended_books_list):
+        with st.container(border=True):
+            st.subheader(book["title"])
+            st.caption(book["author"])
+            st.write(book["genre"])
+            st.write(book["explanation"])
+            if st.button("Check Availability", key=f"show_{i}"):
+                try:
+                    libraries = find_book_in_library(book["title"],book["author"])
+                    st.session_state.recommended_books_list[i]["libraries"] = libraries
+                    st.session_state.selected_book = i
+                except Exception as e:
+                    st.error("ERROR!!!")
+                    st.exception(e)
+
+def display_libraries():
+    if st.session_state.selected_book != None:
+        with st.container(border=True):
+            try:
+                book = st.session_state.recommended_books_list[st.session_state.selected_book]
+                st.subheader(f"Libraries for {book['title']}")
+
+                if "libraries" in book:
+                    for lib in book["libraries"]:
+                        st.success(f"• {lib}")
+            except Exception as e:
+                st.error("ERROR!!!")
+                st.exception(e)

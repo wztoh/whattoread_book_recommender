@@ -4,5 +4,6 @@ litellm
 uuid
 tavily-python
 google-genai
+requests
 
 
