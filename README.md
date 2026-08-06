@@ -35,8 +35,8 @@ Want "a book similar" to your favourite titles? Craving for a specific genre? Th
 - Create a virtual environment and activate it
 ```
 (Windows)
-python -m venv venv venv\Scripts\activate
 python -m venv venv
+venv\Scripts\activate
 
 (Mac OS)
 python3 -m venv venv
