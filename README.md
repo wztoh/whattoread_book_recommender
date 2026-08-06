@@ -8,7 +8,7 @@ Want "a book similar" to your favourite titles? Craving for a specific genre? Th
 - 🤖 AI-generated book recommendations
 - 🔍 Tavily web search for additional book information
 - ⭐ Personalized recommendations
-- - 📚 Singapore National Library Board catalogue search
+- 📚 Singapore National Library Board catalogue search
 - 📍 Library availability lookup
 
 ![Python](https://img.shields.io/badge/Python-3.14-blue)  ![License](https://img.shields.io/badge/License-MIT-green)  ![Streamlit](https://img.shields.io/badge/Built%20with-Streamlit-red) 
